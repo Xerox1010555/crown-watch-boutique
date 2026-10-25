@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="Crown & Co. — Rolex Authorized Boutique. Explore the Submariner, Daytona, Datejust and GMT-Master II in a live 3D atelier.">
+<meta name="theme-color" content="#0a0a0a">
+<title>Crown &amp; Co. — Rolex Authorized Boutique · Haute Horlogerie in 3D</title>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<meta property="og:site_name" content="Crown &amp; Co.">
+<meta property="og:title" content="Crown &amp; Co. — Haute Horlogerie in 3D">
+<meta property="og:description" content="Explore four iconic watch models in a live procedural 3D atelier — configure dial, bezel and bracelet in real time. English &amp; Arabic.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Crown &amp; Co. — Haute Horlogerie in 3D">
+<meta name="twitter:description" content="A live 3D watch atelier: configure dial, bezel and bracelet in real time. English &amp; Arabic.">
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 34'><path fill='%23c9a961' d='M4 24 L7 10 L14.5 18 L20 5 L25.5 18 L33 10 L36 24 Z M6 26 h28 v3.5 H6 z'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600;700&family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<a class="skip-link" href="#main" data-i18n="a11y.skip">Skip to content</a>
+<noscript><p style="padding:120px 24px;text-align:center;font-family:serif">Crown &amp; Co. — Rolex Authorized Boutique · Please enable JavaScript for the full 3D experience.<br>يرجى تفعيل JavaScript لتجربة العرض ثلاثي الأبعاد كاملة.</p></noscript>
+
+<!-- ═══ Preloader ═══ -->
+<div id="loader" role="progressbar" aria-label="Loading" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+  <div class="ld-mark">
+    <div class="ld-ring" aria-hidden="true"></div>
+    <svg class="ld-crown" viewBox="0 0 40 34" aria-hidden="true"><path d="M4 24 L7 10 L14.5 18 L20 5 L25.5 18 L33 10 L36 24 Z M6 27 h28 M8 31 h24"/></svg>
+  </div>
+  <div class="ld-num"><span id="ld-pct">0</span><small>%</small></div>
+  <p class="ld-tag" data-i18n="pre.tag">CROWN &amp; CO. · AUTHORIZED BOUTIQUE</p>
+</div>
+
+<!-- ═══ Custom cursor ═══ -->
+<div id="cur-dot" aria-hidden="true"></div>
+<div id="cur-ring" aria-hidden="true"></div>
+
+<!-- ═══ Giant backdrop word (behind WebGL canvas) ═══ -->
+<div id="giant" aria-hidden="true"><span id="giant-word">PERPETUAL</span></div>
+
+<!-- ═══ Fixed WebGL stage ═══ -->
+<canvas id="gl" aria-hidden="true"></canvas>
+<div id="gl-wrap-fallback" aria-hidden="true">
+  <div>
+    <div class="fallback-watch"></div>
+    <p class="fallback-note" data-i18n="gl.fallback">3D display is unavailable on this device — exploring the boutique in classic view.</p>
+  </div>
+</div>
+
+<!-- ═══ Navigation ═══ -->
+<header id="nav">
+  <div class="nav-inner">
+    <a class="logo" href="#hero" data-anchor="#hero" aria-label="Crown and Co — home">
+      <svg class="logo-crown" viewBox="0 0 40 34" aria-hidden="true"><path fill="#c9a961" d="M4 24 L7 10 L14.5 18 L20 5 L25.5 18 L33 10 L36 24 Z M6 26 h28 v3.5 H6 z"/></svg>
+      <span class="logo-text">
+        <span class="logo-name">Crown &amp; Co.</span>
+        <span class="logo-sub" data-i18n="nav.boutique">Rolex Authorized Boutique</span>
+      </span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#collection" data-anchor="#collection" data-nav="collection" data-i18n="nav.collection">Collection</a>
+      <a href="#configurator" data-anchor="#configurator" data-nav="configurator" data-i18n="nav.configurator">Configurator</a>
+      <a href="#craft" data-anchor="#craft" data-nav="craft" data-i18n="nav.craft">Craft</a>
+      <a href="#boutiques" data-anchor="#boutiques" data-nav="boutiques" data-i18n="nav.boutiques">Boutiques</a>
+    </nav>
+    <div class="nav-tools">
+      <select class="currency" id="currency-nav" aria-label="Currency">
+        <option value="USD">USD $</option>
+        <option value="EGP">EGP</option>
+        <option value="AED">AED</option>
+        <option value="SAR">SAR</option>
+      </select>
+      <button class="tool-btn lang-btn" id="lang-btn" aria-label="Switch language">ع</button>
+      <button class="tool-btn" id="cart-btn" aria-label="Open cart" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8 h12 l-1 12 H7 L6 8 Z"/><path d="M9 8 V6 a3 3 0 0 1 6 0 v2"/></svg>
+        <span class="cart-count" id="cart-count" data-zero="1">0</span>
+      </button>
+      <button class="burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══ Mobile menu ═══ -->
+<div id="menu" role="dialog" aria-modal="true" aria-label="Menu">
+  <nav class="menu-links" aria-label="Mobile">
+    <a href="#collection" data-anchor="#collection" data-menu-close><span data-i18n="nav.collection">Collection</span><small>01</small></a>
+    <a href="#configurator" data-anchor="#configurator" data-menu-close><span data-i18n="nav.configurator">Configurator</span><small>02</small></a>
+    <a href="#craft" data-anchor="#craft" data-menu-close><span data-i18n="nav.craft">Craft</span><small>03</small></a>
+    <a href="#boutiques" data-anchor="#boutiques" data-menu-close><span data-i18n="nav.boutiques">Boutiques</span><small>04</small></a>
+  </nav>
+  <div class="menu-foot">
+    <select class="currency" id="currency-menu" aria-label="Currency">
+      <option value="USD">USD $</option>
+      <option value="EGP">EGP</option>
+      <option value="AED">AED</option>
+      <option value="SAR">SAR</option>
+    </select>
+    <button class="tool-btn lang-btn" id="lang-btn-menu">ع</button>
+  </div>
+</div>
+
+<div id="page">
+<main id="main" tabindex="-1">
+
+  <!-- ═══════════ HERO ═══════════ -->
+  <section id="hero" aria-label="Introduction">
+    <div class="hero-halo" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <p class="eyebrow" data-reveal><span data-i18n="hero.eyebrow">Crown &amp; Co. · Rolex Authorized Boutique</span></p>
+      <h1 class="hero-title">
+        <span class="row"><span class="row-inner" data-split data-i18n="hero.titleA">Time,</span></span>
+        <span class="row"><span class="row-inner accent" data-split data-i18n="hero.titleB">Perfected.</span></span>
+      </h1>
+      <p class="hero-sub" data-reveal style="--d:.15s" data-i18n="hero.sub">An atelier of Oystersteel, 18 ct gold and in-house calibres. Explore the world's most coveted timepieces — rendered live, in three dimensions.</p>
+      <div class="hero-cta" data-reveal style="--d:.3s">
+        <a class="btn btn-gold magnetic" href="#collection" data-anchor="#collection"><span class="btn-inner" data-i18n="hero.cta1">Explore the Collection</span></a>
+        <a class="btn magnetic" href="#boutiques" data-anchor="#boutiques"><span class="btn-inner" data-i18n="hero.cta2">Book an Appointment</span></a>
+      </div>
+      <p class="hero-meta" data-reveal style="--d:.45s">
+        <span data-i18n="hero.metaCities">Geneva · Dubai · Riyadh · Cairo</span><i aria-hidden="true"></i><span data-i18n="hero.metaEst">Since 1948</span>
+      </p>
+    </div>
+    <p class="scroll-hint" aria-hidden="true" data-i18n="hero.scroll">Scroll to discover</p>
+    <div class="hero-stage" id="stage-hero" data-tilt-stage style="position:absolute;inset:0;z-index:3" aria-hidden="true"></div>
+  </section>
+
+  <!-- ═══════════ SCROLL STORYTELLING ═══════════ -->
+  <section id="story" aria-label="The craft, told in three chapters">
+   <h2 class="sr-only" data-i18n="story.heading">The story, in three chapters</h2>
+
+    <div class="chapter" id="ch1">
+      <div class="ch-inner">
+        <p class="ch-num">01 · <span data-i18n="story1.kicker">The Bezel</span></p>
+        <h3 class="ch-title" data-split data-i18n="story1.title">A Signature Cut in Light</h3>
+        <p class="ch-body" data-i18n="story1.body">Sixty-four facets machined into precious metal at a precise 45° angle. The fluted bezel catches light like a prism — and crowns every dial in the collection.</p>
+        <span class="ch-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 L20 20 H4 Z"/></svg><span data-i18n="story1.chip">18 ct gold · 64 facets</span></span>
+      </div>
+    </div>
+
+    <div class="chapter" id="ch2">
+      <div class="ch-inner">
+        <p class="ch-num">02 · <span data-i18n="story2.kicker">The Calibre</span></p>
+        <h3 class="ch-title" data-split data-i18n="story2.title">The Heart That Never Rests</h3>
+        <p class="ch-body" data-i18n="story2.body">Beneath the dial, the manufacture calibre beats at 28,800 vibrations per hour — Chronergy escapement, seventy hours of reserve, certified to −2/+2 seconds a day.</p>
+        <span class="ch-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7 v5 l3.5 2"/></svg><span data-i18n="story2.chip">−2/+2 sec · Superlative Chronometer</span></span>
+      </div>
+    </div>
+
+    <div class="chapter" id="ch3">
+      <div class="ch-inner">
+        <p class="ch-num">03 · <span data-i18n="story3.kicker">The Oyster Case</span></p>
+        <h3 class="ch-title" data-split data-i18n="story3.title">Engineered for the Deep</h3>
+        <p class="ch-body" data-i18n="story3.body">A monobloc middle case, Triplock crown and hermetically screwed caseback — sealed like a vault around the movement, waterproof to three hundred metres.</p>
+        <span class="ch-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 c 3 4 -3 6 0 9 c 2 2 5 3 5 6 a 7 7 0 1 0 -10 0 c 0 -3 3 -4 5 -6"/></svg><span data-i18n="story3.chip">Waterproof 300 m</span></span>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ═══════════ COLLECTION ═══════════ -->
+  <section id="collection" class="section" aria-label="The collection">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="kicker" data-reveal data-i18n="col.kicker">The Collection</p>
+        <h2 class="sec-title" data-reveal style="--d:.1s"><span data-i18n="col.titleA">Four Icons,</span> <em data-i18n="col.titleB">One Crown</em></h2>
+        <p class="sec-sub" data-reveal style="--d:.2s" data-i18n="col.sub">Select a reference to restyle the atelier. Every watch is modelled live — feel the light move across the bezel as you browse.</p>
+      </header>
+      <div class="col-grid" style="margin-top:64px">
+        <div class="col-list" id="col-list"><!-- cards rendered by JS --></div>
+        <div class="col-stage" id="stage-collection" data-tilt-stage>
+          <p class="stage-hint" data-i18n="col.hint">Drag to rotate · Hover a card to preview</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ CONFIGURATOR ═══════════ -->
+  <section id="configurator" class="section" aria-label="Configurator">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="kicker" data-reveal data-i18n="cfg.kicker">The Configurator</p>
+        <h2 class="sec-title" data-reveal style="--d:.1s"><span data-i18n="cfg.titleA">Commission</span> <em data-i18n="cfg.titleB">Yours</em></h2>
+        <p class="sec-sub" data-reveal style="--d:.2s" data-i18n="cfg.sub">Dial, bezel, bracelet — every choice is rendered live on the watch above and priced instantly.</p>
+      </header>
+      <div class="cfg-grid" style="margin-top:60px">
+        <div class="cfg-panel">
+          <div class="cfg-group" role="group" aria-label="Dial colour">
+            <div class="cfg-group-label"><span data-i18n="cfg.gDial">Dial</span><b id="cfg-dial-name">Noir</b></div>
+            <div class="swatches" id="cfg-dial"><!-- rendered by JS --></div>
+          </div>
+          <div class="cfg-group" role="group" aria-label="Bezel">
+            <div class="cfg-group-label"><span data-i18n="cfg.gBezel">Bezel</span><b id="cfg-bezel-name">Steel</b></div>
+            <div class="pills" id="cfg-bezel"><!-- rendered by JS --></div>
+          </div>
+          <div class="cfg-group" role="group" aria-label="Bracelet material">
+            <div class="cfg-group-label"><span data-i18n="cfg.gBracelet">Bracelet</span><b id="cfg-bracelet-name">Steel</b></div>
+            <div class="pills" id="cfg-bracelet"><!-- rendered by JS --></div>
+          </div>
+          <div class="cfg-group" role="group" aria-label="Bracelet style">
+            <div class="cfg-group-label"><span data-i18n="cfg.gStyle">Style</span><b id="cfg-style-name">Oyster</b></div>
+            <div class="pills" id="cfg-style"><!-- rendered by JS --></div>
+          </div>
+          <div class="cfg-summary" data-reveal>
+            <div class="cfg-sum-model">
+              <h3 id="cfg-model-name">Submariner</h3>
+              <span id="cfg-model-ref">Ref. 124060</span>
+            </div>
+            <div class="cfg-lines" id="cfg-lines"><!-- rendered by JS --></div>
+            <div class="cfg-total">
+              <small data-i18n="cfg.yourPrice">Your configuration</small>
+              <div class="cfg-price" id="cfg-price">$11,250</div>
+            </div>
+            <div class="cfg-actions">
+              <button class="btn btn-gold btn-wide magnetic" id="cfg-add"><span class="btn-inner" data-i18n="cfg.add">Add to Cart</span></button>
+              <button class="btn magnetic" id="cfg-reset" aria-label="Reset configuration"><span class="btn-inner" data-i18n="cfg.reset">Reset</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="cfg-stage" id="stage-config" data-tilt-stage>
+          <p class="stage-hint" data-i18n="cfg.hint">Drag to rotate · Changes apply live</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ CRAFT / SPECS ═══════════ -->
+  <section id="craft" class="section" data-theme="light" aria-label="Craftsmanship and specifications">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="kicker" data-reveal data-i18n="craft.kicker">Craftsmanship</p>
+        <h2 class="sec-title" data-reveal style="--d:.1s"><span data-i18n="craft.titleA">The Superlative</span> <em data-i18n="craft.titleB">Standard</em></h2>
+      </header>
+      <div class="craft-grid">
+        <div class="counter" data-reveal><div class="num"><span data-count="300">0</span><span class="sfx">m</span></div><p class="lbl" data-i18n="craft.c1">Waterproof depth</p></div>
+        <div class="counter" data-reveal style="--d:.08s"><div class="num"><span data-count="70">0</span><span class="sfx">h</span></div><p class="lbl" data-i18n="craft.c2">Power reserve</p></div>
+        <div class="counter" data-reveal style="--d:.16s"><div class="num"><span data-count="31">0</span><span class="sfx">◆</span></div><p class="lbl" data-i18n="craft.c3">Jewels in calibre</p></div>
+        <div class="counter" data-reveal style="--d:.24s"><div class="num"><span data-count="5">0</span><span class="sfx">yr</span></div><p class="lbl" data-i18n="craft.c4">International warranty</p></div>
+      </div>
+      <div class="craft-cols">
+        <div class="craft-copy" data-reveal>
+          <p data-i18n="craft.p1">Every timepiece that leaves our atelier carries the green seal — a promise that it has survived a battery of tests far beyond the industry norm, twice certified for precision on the wrist.</p>
+          <p data-i18n="craft.p2">Cases are forged from a single block of <strong>Oystersteel</strong>, a grade 904L alloy exclusive to the manufacture. Bezels are cut, fluted and set by hand. Movements are assembled, regulated and disassembled again — then assembled once more, to perfection.</p>
+          <p data-i18n="craft.p3">The result is a chronometer certified to <strong>−2/+2 seconds per day</strong> — a tolerance roughly twice as strict as the official standard for a certified chronometer.</p>
+          <blockquote class="craft-quote">
+            <span data-i18n="craft.q">“A watch does not merely keep time. It keeps a promise made to the second, for generations.”</span>
+            <footer data-i18n="craft.qBy">— The Master Atelier, Geneva</footer>
+          </blockquote>
+        </div>
+        <div class="feat-list" data-reveal style="--d:.15s">
+          <div class="feat">
+            <span class="feat-ic"><svg viewBox="0 0 24 24"><path d="M12 3 L20 20 H4 Z M12 9 v6 M9 15 l3 5 3-5"/></svg></span>
+            <div><h4 data-i18n="craft.f1t">Fluted Bezel</h4><p data-i18n="craft.f1p">Sixty-four facets cut at 45° in 18 ct gold, polished to a mirror by a single artisan.</p></div>
+          </div>
+          <div class="feat">
+            <span class="feat-ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7 v5 l3.5 2 M12 3.5 v1 M20.5 12 h-1 M12 19.5 v1 M3.5 12 h1"/></svg></span>
+            <div><h4 data-i18n="craft.f2t">Chronergy Escapement</h4><p data-i18n="craft.f2p">A patented high-efficiency escapement, tolerant to magnetic fields up to 15,000 gauss.</p></div>
+          </div>
+          <div class="feat">
+            <span class="feat-ic"><svg viewBox="0 0 24 24"><path d="M12 4 a 8 8 0 0 1 8 8 c 0 4 -2 6.5 -8 8 c -6 -1.5 -8 -4 -8 -8 a 8 8 0 0 1 8 -8 Z M12 4 v16"/></svg></span>
+            <div><h4 data-i18n="craft.f3t">Oystersteel Case</h4><p data-i18n="craft.f3p">A monobloc middle case forged from 904L alloy, screw-down back and Triplock crown.</p></div>
+          </div>
+          <div class="feat">
+            <span class="feat-ic"><svg viewBox="0 0 24 24"><path d="M4 17 c 4 -2 12 -2 16 0 M6 13 c 3.5 -1.7 8.5 -1.7 12 0 M8 9 c 2.5 -1.2 5.5 -1.2 8 0 M10.5 5 c 1 -0.5 3 -0.5 3 0"/></svg></span>
+            <div><h4 data-i18n="craft.f4t">Jubilee Bracelet</h4><p data-i18n="craft.f4p">Five solid links, assembled by hand since 1945 — supple as silk, unbreakable as oath.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ TESTIMONIALS ═══════════ -->
+  <section id="testimonials" class="section" aria-label="Testimonials">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="kicker" data-reveal data-i18n="t.kicker">Word of Mouth</p>
+        <h2 class="sec-title" data-reveal style="--d:.1s"><span data-i18n="t.titleA">Kept by</span> <em data-i18n="t.titleB">Collectors</em></h2>
+      </header>
+      <div class="t-grid" id="t-grid"><!-- rendered by JS --></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ BOUTIQUES ═══════════ -->
+  <section id="boutiques" class="section" data-theme="light" aria-label="Boutique locations">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="kicker" data-reveal data-i18n="b.kicker">Boutiques</p>
+        <h2 class="sec-title" data-reveal style="--d:.1s"><span data-i18n="b.titleA">Visit the</span> <em data-i18n="b.titleB">Atelier</em></h2>
+        <p class="sec-sub" data-reveal style="--d:.2s" data-i18n="b.sub">Private viewings by appointment. Our advisors speak English, Arabic and French.</p>
+      </header>
+      <div class="b-grid" id="b-grid"><!-- rendered by JS --></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ NEWSLETTER ═══════════ -->
+  <section id="newsletter" class="section" aria-label="Newsletter">
+    <div class="nl-inner">
+      <p class="kicker" data-reveal data-i18n="nl.kicker">The Private List</p>
+      <h2 class="sec-title" data-reveal style="--d:.1s"><span data-i18n="nl.titleA">First to</span> <em data-i18n="nl.titleB">Know</em></h2>
+      <p class="sec-sub" data-reveal style="--d:.2s;margin-inline:auto" data-i18n="nl.sub">New references, private viewings and boutique evenings — a quiet letter, four times a year.</p>
+      <form class="nl-form" id="nl-form" novalidate data-reveal style="--d:.3s">
+        <label class="sr-only" for="nl-email" data-i18n="nl.emailLabel">Email address</label>
+        <input type="email" id="nl-email" name="email" autocomplete="email" placeholder="name@example.com" required>
+        <button type="submit" data-i18n="nl.button">Subscribe</button>
+      </form>
+      <p class="nl-error" id="nl-error" role="alert" data-i18n="nl.error">Please enter a valid email address.</p>
+      <p class="nl-ok" id="nl-ok"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 12.5 L10 18 L20 6"/></svg><span data-i18n="nl.success">Welcome to the private list. Your invitation is on its way.</span></p>
+      <p class="nl-note" data-i18n="nl.privacy">No noise, no resale of your address. Unsubscribe with one click.</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer class="site" aria-label="Footer">
+  <div class="f-grid">
+    <div class="f-brand">
+      <a class="logo" href="#hero" data-anchor="#hero">
+        <svg class="logo-crown" viewBox="0 0 40 34" aria-hidden="true"><path fill="#c9a961" d="M4 24 L7 10 L14.5 18 L20 5 L25.5 18 L33 10 L36 24 Z M6 26 h28 v3.5 H6 z"/></svg>
+        <span class="logo-text">
+          <span class="logo-name">Crown &amp; Co.</span>
+          <span class="logo-sub" data-i18n="nav.boutique">Rolex Authorized Boutique</span>
+        </span>
+      </a>
+      <p data-i18n="f.blurb">An independent family maison since 1948, guarding the art of horology across four cities and three generations.</p>
+      <div class="f-social">
+        <a href="#" data-soon title="Coming soon" aria-label="Instagram">IG</a>
+        <a href="#" data-soon title="Coming soon" aria-label="YouTube">YT</a>
+        <a href="#" data-soon title="Coming soon" aria-label="X">X</a>
+        <a href="#" data-soon title="Coming soon" aria-label="Pinterest">PT</a>
+      </div>
+    </div>
+    <div class="f-col">
+      <h4 data-i18n="f.colTitle1">Collection</h4>
+      <a href="#collection" data-anchor="#collection" data-model-link="submariner">Submariner</a>
+      <a href="#collection" data-anchor="#collection" data-model-link="daytona">Cosmograph Daytona</a>
+      <a href="#collection" data-anchor="#collection" data-model-link="datejust">Datejust 41</a>
+      <a href="#collection" data-anchor="#collection" data-model-link="gmt">GMT-Master II</a>
+    </div>
+    <div class="f-col">
+      <h4 data-i18n="f.colTitle2">Services</h4>
+      <a href="#configurator" data-anchor="#configurator" data-i18n="f.s1">Commission a watch</a>
+      <a href="#craft" data-anchor="#craft" data-i18n="f.s2">Care &amp; servicing</a>
+      <a href="#craft" data-anchor="#craft" data-i18n="f.s3">Warranty</a>
+      <a href="#boutiques" data-anchor="#boutiques" data-i18n="f.s4">Private appointments</a>
+    </div>
+    <div class="f-col">
+      <h4 data-i18n="f.colTitle3">Contact</h4>
+      <ul>
+        <li><a href="mailto:concierge@crownandco.example" dir="ltr">concierge@crownandco.example</a></li>
+        <li><a href="tel:+41220000000" dir="ltr">+41 22 000 00 00</a></li>
+        <li data-i18n="f.hours">Sun–Thu · 10:00–22:00</li>
+      </ul>
+    </div>
+  </div>
+  <div class="f-bottom">
+    <span>© <span data-year>2026</span> Crown &amp; Co. — <span data-i18n="f.rights">All rights reserved.</span></span>
+    <span data-i18n="f.disclaimer">Concept demonstration. Not affiliated with Rolex SA.</span>
+    <a class="top-btn" href="#hero" data-anchor="#hero"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M12 20 V5 M5 12 l7-7 7 7"/></svg><span data-i18n="f.top">Back to top</span></a>
+  </div>
+</footer>
+</div><!-- /#page -->
+
+<div id="scroll-spacer" aria-hidden="true"></div>
+
+<!-- ═══════════ CART DRAWER ═══════════ -->
+<div id="cart-overlay" aria-hidden="true"></div>
+<aside id="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping cart" aria-hidden="true">
+  <div class="cd-head">
+    <h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8 h12 l-1 12 H7 L6 8 Z"/><path d="M9 8 V6 a3 3 0 0 1 6 0 v2"/></svg><span data-i18n="cart.title">Your Selection</span></h3>
+    <button class="cd-close" id="cart-close" aria-label="Close cart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5 l14 14 M19 5 L5 19"/></svg></button>
+  </div>
+  <div class="cd-body">
+    <!-- Cart view -->
+    <div id="cart-view">
+      <div class="cd-empty" id="cart-empty">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7 v5 l3.5 2"/></svg>
+        <h4 data-i18n="cart.emptyTitle">Nothing chosen yet</h4>
+        <p data-i18n="cart.emptySub">Explore the collection and commission the watch that keeps your time.</p>
+        <button class="btn magnetic" id="cart-browse"><span class="btn-inner" data-i18n="cart.browse">Browse the Collection</span></button>
+      </div>
+      <div id="cart-items" hidden></div>
+    </div>
+    <!-- Checkout view -->
+    <form id="checkout-view" class="co-form" hidden novalidate>
+      <h4 class="co-title" data-i18n="co.title">Checkout</h4>
+      <p class="co-note" data-i18n="co.note">A concierge will call to confirm payment and delivery. No card is charged in this demo.</p>
+      <div class="field"><label for="co-name" data-i18n="co.name">Full name</label><input id="co-name" name="name" autocomplete="name" required><p class="fe" data-i18n="co.errName">Please tell us your name.</p></div>
+      <div class="field"><label for="co-email" data-i18n="co.email">Email</label><input id="co-email" type="email" name="email" autocomplete="email" required><p class="fe" data-i18n="co.errEmail">A valid email is required.</p></div>
+      <div class="field-row">
+        <div class="field"><label for="co-phone" data-i18n="co.phone">Phone</label><input id="co-phone" type="tel" name="phone" autocomplete="tel" required><p class="fe" data-i18n="co.errPhone">Please enter a phone number.</p></div>
+        <div class="field"><label for="co-city" data-i18n="co.city">City</label><input id="co-city" name="city" autocomplete="address-level2" required><p class="fe" data-i18n="co.errCity">Please enter your city.</p></div>
+      </div>
+      <div class="field"><label for="co-address" data-i18n="co.address">Delivery address</label><input id="co-address" name="address" autocomplete="street-address" required><p class="fe" data-i18n="co.errAddress">Please enter a delivery address.</p></div>
+      <div class="co-actions">
+        <button type="button" class="btn magnetic" id="co-back"><span class="btn-inner" data-i18n="co.back">Back</span></button>
+        <button type="submit" class="btn btn-gold btn-wide magnetic"><span class="btn-inner" data-i18n="co.place">Place Order</span></button>
+      </div>
+    </form>
+    <!-- Success view -->
+    <div id="ok-view" class="ok-panel" hidden>
+      <span class="okc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5 L10 18 L20 6"/></svg></span>
+      <h4 data-i18n="ok.title">Order Reserved</h4>
+      <p data-i18n="ok.body">Our concierge will contact you within one business day to arrange payment and delivery.</p>
+      <span class="ok-num" id="ok-num">CC-000000</span>
+      <button class="btn magnetic" id="ok-continue"><span class="btn-inner" data-i18n="ok.continue">Continue Browsing</span></button>
+    </div>
+  </div>
+  <div class="cd-foot" id="cart-foot" hidden>
+    <div class="cd-sub"><small data-i18n="cart.subtotal">Subtotal</small><span class="p" id="cart-total">$0</span></div>
+    <p class="cd-tax" data-i18n="cart.taxNote">Taxes and insured delivery calculated by the concierge.</p>
+    <button class="btn btn-gold btn-wide magnetic" id="cart-checkout"><span class="btn-inner" data-i18n="cart.checkout">Proceed to Checkout</span></button>
+  </div>
+</aside>
+
+<!-- ═══════════ Toast ═══════════ -->
+<div id="toast" role="status" aria-live="polite">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5 L10 18 L20 6"/></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<!-- ═══════════ Libraries (pinned, cdnjs) ═══════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.147.0/three.min.js" integrity="sha384-vV17nr/rMaJqmeZkFUzXLpHdQ+ME5QHKdydaqqN+3Ga39RJlNrTatJxHwGV4ml2C" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" integrity="sha384-Z3REaz79l2IaAZqJsSABtTbhjgOUYyV3p90XNnAPCSHg3EMTz1fouunq9WZRtj3d" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script src="./app.js" defer></script>
+</body>
+</html>

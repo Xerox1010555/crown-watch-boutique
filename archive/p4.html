@@ -1,0 +1,604 @@
+/* ─────────────────────────────────────────────────────────────
+   1. UTILITIES & CAPABILITIES
+   ───────────────────────────────────────────────────────────── */
+const $  = (s, c) => (c || document).querySelector(s);
+const $$ = (s, c) => Array.from((c || document).querySelectorAll(s));
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const clamp01 = v => clamp(v, 0, 1);
+const lerp = (a, b, t) => a + (b - a) * t;
+const damp = (a, b, l, dt) => lerp(a, b, 1 - Math.exp(-l * dt));
+const smoothstep = t => t * t * (3 - 2 * t);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const isCoarse = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const hasGSAP = typeof window.gsap === 'object' && window.gsap !== null;
+const hasST = hasGSAP && typeof window.ScrollTrigger === 'object';
+const hasTHREE = typeof window.THREE === 'object' && window.THREE !== null;
+if (hasST) gsap.registerPlugin(ScrollTrigger);
+if (!hasGSAP) document.documentElement.classList.add('no-anim');
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+/* Safe localStorage (file:// / private mode can throw) */
+const store = {
+  get(key, fallback){
+    try { const v = localStorage.getItem('cc:' + key); return v === null ? fallback : JSON.parse(v); }
+    catch (e) { return fallback; }
+  },
+  set(key, value){
+    try { localStorage.setItem('cc:' + key, JSON.stringify(value)); } catch (e) { /* unavailable */ }
+  }
+};
+
+/* ─────────────────────────────────────────────────────────────
+   2. DATA
+   ───────────────────────────────────────────────────────────── */
+const DIALS = {
+  black:     { hex:'#0d0e11', sun:1, price:0,   name:{en:'Noir',      ar:'أسود'} },
+  green:     { hex:'#0a3d2c', sun:1, price:250, name:{en:'Vert',      ar:'أخضر'} },
+  blue:      { hex:'#0f2f5e', sun:1, price:250, name:{en:'Bleu',      ar:'أزرق'} },
+  champagne: { hex:'#d8c290', sun:1, price:450, name:{en:'Champagne', ar:'شمبانيا'} },
+  ivory:     { hex:'#ece5d4', sun:0, price:350, name:{en:'Ivoire',    ar:'عاجي'} }
+};
+const BEZELS = {
+  steel:   { price:0,    name:{en:'Polished Steel',  ar:'فولاذ مصقول'} },
+  ceramic: { price:400,  name:{en:'Black Ceramic',   ar:'سيراميك أسود'} },
+  fluted:  { price:1200, name:{en:'Fluted Gold',     ar:'ذهب محزّز'} }
+};
+const BRACELETS = {
+  steel:   { price:0,    name:{en:'Oystersteel', ar:'فولاذ أوستر'} },
+  twotone: { price:2600, name:{en:'Two-tone',    ar:'ثنائي المعدن'} },
+  gold:    { price:5200, name:{en:'18 ct Gold',  ar:'ذهب 18 قيراط'} }
+};
+const STYLES = {
+  oyster:  { price:0,   name:{en:'Oyster',   ar:'أويستر'} },
+  jubilee: { price:300, name:{en:'Jubilee',  ar:'جوبيلي'} }
+};
+const CURRENCIES = {
+  USD: { rate:1,      label:'USD' },
+  EGP: { rate:48.60,  label:'EGP' },
+  AED: { rate:3.6725, label:'AED' },
+  SAR: { rate:3.7500, label:'SAR' }
+};
+
+const MODELS = {
+  submariner: {
+    name:  { en:'Submariner',           ar:'صب مارين' },
+    word:  { en:'SUBMARINER',           ar:'صب مارين' },
+    ref:   '124060', price: 11250, size: '41 mm',
+    dial: 'black', bezelKind: 'dive', bezelMat: 'ceramic',
+    bracelet: 'steel', style: 'oyster', accent: 'steel',
+    dot: '#0d0e11',
+    desc: { en:'The reference diver\'s watch since 1953 — unidirectional Cerachrom bezel, waterproof to 300 metres.',
+            ar:'ساعة الغوص المرجعية منذ عام ١٩٥٣ — إطار سيراكروم أحادي الاتجاه ومقاومة للماء حتى ٣٠٠ متر.' },
+    chips: [ {en:'Oystersteel',ar:'فولاذ أوستر'}, {en:'Cerachrom',ar:'سيراكروم'}, {en:'300 m',ar:'300 م'} ]
+  },
+  daytona: {
+    name:  { en:'Cosmograph Daytona',   ar:'كوزموغراف دايتونا' },
+    word:  { en:'DAYTONA',              ar:'دايتونا' },
+    ref:   '126500LN', price: 15900, size: '40 mm',
+    dial: 'ivory', bezelKind: 'tachymeter', bezelMat: 'steel',
+    bracelet: 'steel', style: 'oyster', accent: 'steel',
+    dot: '#ece5d4',
+    desc: { en:'Born for endurance racing — panda tri-compax dial and a tachymetric scale to 400 units per hour.',
+            ar:'وُلدت لسباقات التحمل — مينا «باندا» بثلاث عدادات فرعية ومقياس سرعة حتى ٤٠٠ وحدة في الساعة.' },
+    chips: [ {en:'Chronograph',ar:'كرونوغراف'}, {en:'Panda dial',ar:'مينا باندا'}, {en:'4 Hz',ar:'4 هرتز'} ]
+  },
+  datejust: {
+    name:  { en:'Datejust 41',          ar:'ديت جست 41' },
+    word:  { en:'DATEJUST',             ar:'ديت جست' },
+    ref:   '126234', price: 9850, size: '41 mm',
+    dial: 'champagne', bezelKind: 'fluted', bezelMat: 'fluted',
+    bracelet: 'twotone', style: 'jubilee', accent: 'gold',
+    dot: '#d8c290',
+    desc: { en:'The classic of classics — fluted bezel, cyclops lens over the date, and the supple Jubilee bracelet.',
+            ar:'الكلاسيكية فوق الكلاسيكيات — إطار محزّز وعدسة سيكلوب فوق التاريخ وسوار جوبيلي فاخر.' },
+    chips: [ {en:'Fluted bezel',ar:'إطار محزّز'}, {en:'Jubilee',ar:'جوبيلي'}, {en:'Cyclops',ar:'سيكلوب'} ]
+  },
+  gmt: {
+    name:  { en:'GMT-Master II',        ar:'جي إم تي ماستر II' },
+    word:  { en:'GMT-MASTER',           ar:'جي إم تي' },
+    ref:   '126710BLRO', price: 11700, size: '40 mm',
+    dial: 'black', bezelKind: 'pepsi', bezelMat: 'ceramic',
+    bracelet: 'steel', style: 'oyster', accent: 'steel',
+    dot: '#12315e',
+    desc: { en:'The legendary «Pepsi» — a 24-hour bidirectional bezel tracking a second time zone at a glance.',
+            ar:'الأسطورية «بيبسي» — إطار ٢٤ ساعة ثنائي الاتجاه يتتبّع منطقة زمنية ثانية بنظرة واحدة.' },
+    chips: [ {en:'24 h bezel',ar:'إطار 24 ساعة'}, {en:'Pepsi',ar:'بيبسي'}, {en:'Two zones',ar:'توقيتان'} ]
+  }
+};
+const MODEL_ORDER = ['submariner', 'daytona', 'datejust', 'gmt'];
+
+const TESTIMONIALS = [
+  { who:{en:'Isabelle Marchand',ar:'إيزابيل مارشان'}, city:{en:'Geneva',ar:'جنيف'}, watch:'Datejust 41',
+    q:{en:'“The boutique felt like a private atelier. Champagne, quiet light, and the watch turned in my hands for an hour before a word about price.”',
+       ar:'«كانت البوتيك وكأنها مشغل خاص. شمبانيا وضوء هادئ، وأمضيت ساعة أُدارس الساعة في يدي قبل أن تُذكر كلمة واحدة عن السعر.»'} },
+  { who:{en:'Omar Al-Rashid',ar:'عمر الراشد'}, city:{en:'Dubai',ar:'دبي'}, watch:'Submariner',
+    q:{en:'“I configured my Submariner in the 3D atelier at midnight, and collected it — adjusted, polished, engraved — the next evening.”',
+       ar:'«صمّمت ساعتي صب مارين في الأتيليه ثلاثي الأبعاد منتصف الليل، واستلمتها في المساء التالي مضبوطة ومصقولة ومنقوشة.»'} },
+  { who:{en:'Layla Hassan',ar:'ليلى حسن'}, city:{en:'Cairo',ar:'القاهرة'}, watch:'GMT-Master II',
+    q:{en:'“Two time zones, one on each wrist now — my husband and I chose the Pepsi together. Service worthy of the crown.”',
+       ar:'«توقيتان وزوجان — اخترنا أنا وزوجي «بيبسي» معًا. خدمة تليق بالتاج.»'} }
+];
+
+const BOUTIQUES = [
+  { city:{en:'Geneva',ar:'جنيف'}, tag:{en:'Flagship',ar:'البوتيك الرئيسي'},
+    addr:{en:'Rue du Rhône 45, 1204',ar:'شارع دو رون 45، 1204'},
+    hours:{en:'Mon–Sat · 10:00–19:00',ar:'الاثنين–السبت · 10:00–19:00'},
+    phone:'+41 22 000 00 01', map:'Geneva Rue du Rhone 45' },
+  { city:{en:'Dubai',ar:'دبي'}, tag:{en:'UAE',ar:'الإمارات'},
+    addr:{en:'The Dubai Mall, Ground Floor',ar:'دبي مول، الطابق الأرضي'},
+    hours:{en:'Daily · 10:00–22:00',ar:'يوميًا · 10:00–22:00'},
+    phone:'+971 4 000 0002', map:'Dubai Mall' },
+  { city:{en:'Riyadh',ar:'الرياض'}, tag:{en:'KSA',ar:'السعودية'},
+    addr:{en:'Kingdom Centre, Level 2',ar:'مركز المملكة، الطابق الثاني'},
+    hours:{en:'Sun–Thu · 10:00–22:00',ar:'الأحد–الخميس · 10:00–22:00'},
+    phone:'+966 11 000 0003', map:'Kingdom Centre Riyadh' },
+  { city:{en:'Cairo',ar:'القاهرة'}, tag:{en:'Egypt',ar:'مصر'},
+    addr:{en:'First Mall, Gezira, Zamalek',ar:'فيرست مول، الجزيرة، الزمالك'},
+    hours:{en:'Daily · 10:00–22:00',ar:'يوميًا · 10:00–22:00'},
+    phone:'+20 2 0000 0004', map:'First Mall Cairo' }
+];
+
+/* ─────────────────────────────────────────────────────────────
+   3. I18N DICTIONARY
+   ───────────────────────────────────────────────────────────── */
+const I18N = {
+en: {
+  'a11y.skip':'Skip to content',
+  'pre.tag':'CROWN & CO. · AUTHORIZED BOUTIQUE',
+  'gl.fallback':'3D display is unavailable on this device — exploring the boutique in classic view.',
+  'nav.boutique':'Rolex Authorized Boutique','nav.collection':'Collection','nav.configurator':'Configurator',
+  'nav.craft':'Craft','nav.boutiques':'Boutiques',
+  'hero.eyebrow':'Crown & Co. · Rolex Authorized Boutique',
+  'hero.titleA':'Time,','hero.titleB':'Perfected.',
+  'hero.sub':'An atelier of Oystersteel, 18 ct gold and in-house calibres. Explore the world\u2019s most coveted timepieces — rendered live, in three dimensions.',
+  'hero.cta1':'Explore the Collection','hero.cta2':'Book an Appointment',
+  'hero.metaCities':'Geneva · Dubai · Riyadh · Cairo','hero.metaEst':'Since 1948','hero.scroll':'Scroll to discover',
+  'story1.kicker':'The Bezel','story1.title':'A Signature Cut in Light',
+  'story1.body':'Sixty-four facets machined into precious metal at a precise 45° angle. The fluted bezel catches light like a prism — and crowns every dial in the collection.',
+  'story1.chip':'18 ct gold · 64 facets',
+  'story2.kicker':'The Calibre','story2.title':'The Heart That Never Rests',
+  'story2.body':'Beneath the dial, the manufacture calibre beats at 28,800 vibrations per hour — Chronergy escapement, seventy hours of reserve, certified to −2/+2 seconds a day.',
+  'story2.chip':'−2/+2 sec · Superlative Chronometer',
+  'story3.kicker':'The Oyster Case','story3.title':'Engineered for the Deep',
+  'story3.body':'A monobloc middle case, Triplock crown and hermetically screwed caseback — sealed like a vault around the movement, waterproof to three hundred metres.',
+  'story3.chip':'Waterproof 300 m',
+  'col.kicker':'The Collection','col.titleA':'Four Icons,','col.titleB':'One Crown',
+  'col.sub':'Select a reference to restyle the atelier. Every watch is modelled live — feel the light move across the bezel as you browse.',
+  'col.hint':'Drag to rotate · Hover a card to preview','col.add':'Add','col.view':'View','col.ref':'Reference',
+  'cfg.kicker':'The Configurator','cfg.titleA':'Commission','cfg.titleB':'Yours',
+  'cfg.sub':'Dial, bezel, bracelet — every choice is rendered live on the watch above and priced instantly.',
+  'cfg.gDial':'Dial','cfg.gBezel':'Bezel','cfg.gBracelet':'Bracelet','cfg.gStyle':'Style',
+  'cfg.yourPrice':'Your configuration','cfg.add':'Add to Cart','cfg.reset':'Reset',
+  'cfg.hint':'Drag to rotate · Changes apply live',
+  'cfg.lineBase':'Base reference','cfg.lineDial':'Dial','cfg.lineBezel':'Bezel','cfg.lineBracelet':'Bracelet','cfg.lineStyle':'Bracelet style',
+  'craft.kicker':'Craftsmanship','craft.titleA':'The Superlative','craft.titleB':'Standard',
+  'craft.c1':'Waterproof depth','craft.c2':'Power reserve','craft.c3':'Jewels in calibre','craft.c4':'International warranty',
+  'craft.p1':'Every timepiece that leaves our atelier carries the green seal — a promise that it has survived a battery of tests far beyond the industry norm, twice certified for precision on the wrist.',
+  'craft.p2':'Cases are forged from a single block of Oystersteel, a grade 904L alloy exclusive to the manufacture. Bezels are cut, fluted and set by hand. Movements are assembled, regulated and disassembled again — then assembled once more, to perfection.',
+  'craft.p3':'The result is a chronometer certified to −2/+2 seconds per day — a tolerance roughly twice as strict as the official standard for a certified chronometer.',
+  'craft.q':'“A watch does not merely keep time. It keeps a promise made to the second, for generations.”',
+  'craft.qBy':'— The Master Atelier, Geneva',
+  'craft.f1t':'Fluted Bezel','craft.f1p':'Sixty-four facets cut at 45° in 18 ct gold, polished to a mirror by a single artisan.',
+  'craft.f2t':'Chronergy Escapement','craft.f2p':'A patented high-efficiency escapement, tolerant to magnetic fields up to 15,000 gauss.',
+  'craft.f3t':'Oystersteel Case','craft.f3p':'A monobloc middle case forged from 904L alloy, screw-down back and Triplock crown.',
+  'craft.f4t':'Jubilee Bracelet','craft.f4p':'Five solid links, assembled by hand since 1945 — supple as silk, unbreakable as oath.',
+  't.kicker':'Word of Mouth','t.titleA':'Kept by','t.titleB':'Collectors','t.watch':'Acquired',
+  'b.kicker':'Boutiques','b.titleA':'Visit the','b.titleB':'Atelier',
+  'b.sub':'Private viewings by appointment. Our advisors speak English, Arabic and French.',
+  'b.addr':'Address','b.hours':'Hours','b.phone':'Telephone','b.dir':'Get directions',
+  'nl.kicker':'The Private List','nl.titleA':'First to','nl.titleB':'Know',
+  'nl.sub':'New references, private viewings and boutique evenings — a quiet letter, four times a year.',
+  'nl.emailLabel':'Email address','nl.button':'Subscribe',
+  'nl.error':'Please enter a valid email address.','nl.success':'Welcome to the private list. Your invitation is on its way.',
+  'nl.privacy':'No noise, no resale of your address. Unsubscribe with one click.',
+  'f.blurb':'An independent family maison since 1948, guarding the art of horology across four cities and three generations.',
+  'f.colTitle1':'Collection','f.colTitle2':'Services','f.colTitle3':'Contact',
+  'f.s1':'Commission a watch','f.s2':'Care & servicing','f.s3':'Warranty','f.s4':'Private appointments',
+  'f.hours':'Sun–Thu · 10:00–22:00','f.rights':'All rights reserved.',
+  'f.disclaimer':'Concept demonstration. Not affiliated with Rolex SA.','f.top':'Back to top',
+  'cart.title':'Your Selection','cart.emptyTitle':'Nothing chosen yet',
+  'cart.emptySub':'Explore the collection and commission the watch that keeps your time.',
+  'cart.browse':'Browse the Collection','cart.subtotal':'Subtotal',
+  'cart.taxNote':'Taxes and insured delivery calculated by the concierge.','cart.checkout':'Proceed to Checkout',
+  'cart.qtyMinus':'Decrease quantity','cart.qtyPlus':'Increase quantity','cart.remove':'Remove',
+  'co.title':'Checkout','co.note':'A concierge will call to confirm payment and delivery. No card is charged in this demo.',
+  'co.name':'Full name','co.email':'Email','co.phone':'Phone','co.city':'City','co.address':'Delivery address',
+  'co.errName':'Please tell us your name.','co.errEmail':'A valid email is required.','co.errPhone':'Please enter a phone number.',
+  'co.errCity':'Please enter your city.','co.errAddress':'Please enter a delivery address.',
+  'co.back':'Back','co.place':'Place Order',
+  'ok.title':'Order Reserved','ok.body':'Our concierge will contact you within one business day to arrange payment and delivery.',
+  'ok.continue':'Continue Browsing',
+  'toast.added':'Added to your selection','toast.removed':'Removed from your selection','toast.subscribed':'Subscribed','toast.reset':'Configuration reset'
+},
+ar: {
+  'a11y.skip':'تخطَّ إلى المحتوى',
+  'pre.tag':'كراون آند كو · بوتيك معتمد',
+  'gl.fallback':'عرض الأبعاد الثلاثية غير متاح على هذا الجهاز — نستعرض البوتيك بالوضع الكلاسيكي.',
+  'nav.boutique':'بوتيك معتمد لرولكس','nav.collection':'المجموعة','nav.configurator':'التخصيص',
+  'nav.craft':'الحِرفة','nav.boutiques':'البوتيكات',
+  'hero.eyebrow':'كراون آند كو · بوتيك معتمد لرولكس',
+  'hero.titleA':'الزمنُ،','hero.titleB':'بإتقانٍ مطلق.',
+  'hero.sub':'أتيليه من فولاذ الأويستر والذهب عيار ١٨ قيراطًا وحركات المصنع. اكتشف أكثر ساعات العالم مرغوبًا — معروضة حيّةً بثلاثة أبعاد.',
+  'hero.cta1':'استكشف المجموعة','hero.cta2':'احجز موعدًا',
+  'hero.metaCities':'جنيف · دبي · الرياض · القاهرة','hero.metaEst':'منذ عام ١٩٤٨','hero.scroll':'مرِّر لتكتشف',
+  'story1.kicker':'الإطار','story1.title':'توقيعٌ محفورٌ في الضوء',
+  'story1.body':'أربعةٌ وستون شريحة تُشكَّل في المعدن النفيس بزاوية ٤٥ درجة بدقةٍ مطلقة. الإطار المحزّز يلتقط الضوء كالمنشور — ويتوّج كل مينا في المجموعة.',
+  'story1.chip':'ذهب ١٨ قيراطًا · ٦٤ شريحة',
+  'story2.kicker':'الحركة','story2.title':'قلبٌ لا يعرف الراحة',
+  'story2.body':'تحت المينا، تنبض حركة المصنع بوتيرة ٢٨٨٨٠ اهتزازة في الساعة — مِزلاج كرونرجي، واحتياطي طاقة لسبعين ساعة، ومعتمدة بدقة −٢/+٢ ثانية يوميًا.',
+  'story2.chip':'−٢/+٢ ثانية · كرونومتر فائق',
+  'story3.kicker':'علبة الأويستر','story3.title':'هندسةٌ لأعماق البحار',
+  'story3.body':'علبة وسط من قطعة واحدة، وتاج ترايبلك، وغطاء محكم كالخزنة حول الحركة — مقاومة للماء حتى عمق ثلاثمئة متر.',
+  'story3.chip':'مقاومة للماء ٣٠٠ متر',
+  'col.kicker':'المجموعة','col.titleA':'أربعُ أيقونات،','col.titleB':'تاجٌ واحد',
+  'col.sub':'اختر مرجعًا لإعادة تصميم الأتيليه. كل ساعة تُنمذج حيّةً — وشاهد الضوء ينساب على الإطار أثناء تصفّحك.',
+  'col.hint':'اسحب للتدوير · مرّر على البطاقة للمعاينة','col.add':'أضف','col.view':'عرض','col.ref':'المرجع',
+  'cfg.kicker':'التخصيص','cfg.titleA':'اطلب','cfg.titleB':'ساعتك',
+  'cfg.sub':'المينا والإطار والسوار — كل اختيار يُعرض حيًّا على الساعة أعلاه ويُسعَّر فورًا.',
+  'cfg.gDial':'المينا','cfg.gBezel':'الإطار','cfg.gBracelet':'السوار','cfg.gStyle':'الطراز',
+  'cfg.yourPrice':'تشكيلتك الخاصة','cfg.add':'أضف إلى السلة','cfg.reset':'إعادة ضبط',
+  'cfg.hint':'اسحب للتدوير · التعديلات تُطبَّق فورًا',
+  'cfg.lineBase':'المرجع الأساسي','cfg.lineDial':'المينا','cfg.lineBezel':'الإطار','cfg.lineBracelet':'السوار','cfg.lineStyle':'طراز السوار',
+  'craft.kicker':'الحِرفة','craft.titleA':'المعيار','craft.titleB':'الفائق',
+  'craft.c1':'عمق مقاومة الماء','craft.c2':'احتياطي الطاقة','craft.c3':'جواهر الحركة','craft.c4':'الضمان الدولي',
+  'craft.p1':'كل ساعة تغادر أتيليهنا تحمل الختم الأخضر — وعدٌ بأنها اجتازت سلسلة اختبارات تتجاوز معايير الصناعة بمراحل، ومعتمدة مرتين لدقتها على المعصم.',
+  'craft.p2':'العلب تُصبّ من قطعة واحدة من فولاذ الأويستر، سبيكة ٩٠٤L الحصرية للمصنع. الإطارات تُقطع وتُحزَّز وتُرصَّ يدويًا. الحركات تُجمَّع وتُضبط ثم تُفكَّك من جديد — ثم تُجمَّع مرة أخيرة، إلى الكمال.',
+  'craft.p3':'النتيجة كرونومتر معتمد بدقة −٢/+٢ ثانية في اليوم — تسامحٌ أشد بمرتين تقريبًا من المعيار الرسمي للكرونومتر المعتمد.',
+  'craft.q':'«الساعة لا تحفظ الوقت فحسب، بل تحفظ وعدًا مضبوطًا إلى الثانية، لأجيال.»',
+  'craft.qBy':'— أستاذ الأتيليه، جنيف',
+  'craft.f1t':'الإطار المحزّز','craft.f1p':'أربعٌ وستون شريحة تُقطع بزاوية ٤٥ درجة من ذهب ١٨ قيراطًا، ويصقلها حرفيٌّ واحد حتى المرآة.',
+  'craft.f2t':'مِزلاج كرونرجي','craft.f2p':'مِزلاج عالي الكفاءة حاصل على براءة اختراع، يتحمل مجالات مغناطيسية حتى ١٥٠٠٠ غاوس.',
+  'craft.f3t':'علبة الأويستر','craft.f3p':'علبة وسط من قطعة واحدة من سبيكة ٩٠٤L، بغطاء ملولب وتاج ترايبلك.',
+  'craft.f4t':'سوار الجوبيلي','craft.f4p':'خمسة وصلات مصمتة تُجمَّع يدويًا منذ عام ١٩٤٥ — ناعم كالحرير، متين كالقسم.',
+  't.kicker':'شهادات','t.titleA':'على معاصم','t.titleB':'الجامعين','t.watch':'اقتنى',
+  'b.kicker':'البوتيكات','b.titleA':'زُر','b.titleB':'الأتيليه',
+  'b.sub':'معاينات خاصة بموعد مسبق. مستشارونا يتحدثون العربية والإنجليزية والفرنسية.',
+  'b.addr':'العنوان','b.hours':'الدوام','b.phone':'الهاتف','b.dir':'احصل على الاتجاهات',
+  'nl.kicker':'القائمة الخاصة','nl.titleA':'الأولى','nl.titleB':'بالأخبار',
+  'nl.sub':'مراجع جديدة ومعاينات خاصة وأمسيات البوتيك — رسالة هادئة، أربع مرات في العام.',
+  'nl.emailLabel':'البريد الإلكتروني','nl.button':'اشترك',
+  'nl.error':'يرجى إدخال بريد إلكتروني صحيح.','nl.success':'أهلًا بك في القائمة الخاصة. دعوتك في طريقها إليك.',
+  'nl.privacy':'بلا إزعاج، وبلا مشاركة بريدك مع أي طرف. إلغاء الاشتراك بنقرة واحدة.',
+  'f.blurb':'دار عائلية مستقلة منذ عام ١٩٤٨، تحرس فن الساعات عبر أربع مدن وثلاثة أجيال.',
+  'f.colTitle1':'المجموعة','f.colTitle2':'الخدمات','f.colTitle3':'تواصل',
+  'f.s1':'اطلب ساعة مخصصة','f.s2':'العناية والصيانة','f.s3':'الضمان','f.s4':'مواعيد خاصة',
+  'f.hours':'الأحد–الخميس · 10:00–22:00','f.rights':'جميع الحقوق محفوظة.',
+  'f.disclaimer':'نموذج تجريبي. لا يتبع شركة رولكس.','f.top':'إلى الأعلى',
+  'cart.title':'مختاراتك','cart.emptyTitle':'لم تختر شيئًا بعد',
+  'cart.emptySub':'استكشف المجموعة واطلب الساعة التي تحفظ وقتك.',
+  'cart.browse':'تصفَّح المجموعة','cart.subtotal':'الإجمالي',
+  'cart.taxNote':'تُحسب الضرائب والتوصيل المؤمَّن مع المستشار.','cart.checkout':'إتمام الطلب',
+  'cart.qtyMinus':'إنقاص الكمية','cart.qtyPlus':'زيادة الكمية','cart.remove':'حذف',
+  'co.title':'إتمام الطلب','co.note':'سيتصل بك المستشار لتأكيد الدفع والتسليم. لا تُخصم أي مبالغ في هذا النموذج.',
+  'co.name':'الاسم الكامل','co.email':'البريد الإلكتروني','co.phone':'الهاتف','co.city':'المدينة','co.address':'عنوان التسليم',
+  'co.errName':'يرجى إدخال اسمك.','co.errEmail':'البريد الإلكتروني غير صحيح.','co.errPhone':'يرجى إدخال رقم هاتف.',
+  'co.errCity':'يرجى إدخال المدينة.','co.errAddress':'يرجى إدخال عنوان التسليم.',
+  'co.back':'رجوع','co.place':'تأكيد الطلب',
+  'ok.title':'تم حجز طلبك','ok.body':'سيتواصل معك مستشارنا خلال يوم عمل لترتيب الدفع والتسليم.',
+  'ok.continue':'مواصلة التصفح',
+  'toast.added':'أُضيف إلى مختاراتك','toast.removed':'أُزيل من مختاراتك','toast.subscribed':'تم الاشتراك','toast.reset':'أُعيد ضبط التخصيص'
+}
+};
+
+/* ─────────────────────────────────────────────────────────────
+   4. STATE / CURRENCY / PRICING
+   ───────────────────────────────────────────────────────────── */
+const state = {
+  lang: store.get('lang', (navigator.language || 'en').toLowerCase().startsWith('ar') ? 'ar' : 'en'),
+  currency: store.get('currency', 'USD'),
+  model: 'submariner',
+  cfg: { dial:'black', bezel:'steel', bracelet:'steel', style:'oyster' },
+  cart: store.get('cart', []),
+  cartOpen: false, cartView: 'cart', menuOpen: false, booting: true
+};
+const t = key => (I18N[state.lang] && I18N[state.lang][key]) || I18N.en[key] || key;
+const tx = pair => (pair && (pair[state.lang] || pair.en)) || '';
+const fmt = usd => {
+  const c = CURRENCIES[state.currency] || CURRENCIES.USD;
+  try {
+    return new Intl.NumberFormat('en-US', { style:'currency', currency: state.currency, maximumFractionDigits: 0 })
+      .format(Math.round(usd * c.rate));
+  } catch (e) { return Math.round(usd * c.rate) + ' ' + c.label; }
+};
+function modelDefaults(id){
+  const m = MODELS[id];
+  return { dial: m.dial, bezel: m.bezelMat, bracelet: m.bracelet, style: m.style };
+}
+function priceOf(modelId, cfg){
+  const m = MODELS[modelId], d = modelDefaults(modelId);
+  return m.price
+       + (DIALS[cfg.dial].price        - DIALS[d.dial].price)
+       + (BEZELS[cfg.bezel].price      - BEZELS[d.bezel].price)
+       + (BRACELETS[cfg.bracelet].price - BRACELETS[d.bracelet].price)
+       + (STYLES[cfg.style].price      - STYLES[d.style].price);
+}
+function cfgSummary(modelId, cfg){
+  const m = MODELS[modelId];
+  return [tx(m.name), tx(DIALS[cfg.dial].name), tx(BEZELS[cfg.bezel].name),
+          tx(BRACELETS[cfg.bracelet].name), tx(STYLES[cfg.style].name)].join(' · ');
+}
+
+/* ─────────────────────────────────────────────────────────────
+   5. TOAST
+   ───────────────────────────────────────────────────────────── */
+let toastTimer = null;
+function toast(key){
+  const el = $('#toast'); if (!el) return;
+  $('#toast-msg').textContent = t(key);
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   6. I18N APPLY + DYNAMIC RENDERERS
+   ───────────────────────────────────────────────────────────── */
+function applyLang(){
+  const html = document.documentElement;
+  html.lang = state.lang;
+  html.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+  $$('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
+  const langLabels = $$('.lang-btn');
+  langLabels.forEach(b => { b.textContent = state.lang === 'en' ? 'ع' : 'EN'; });
+  renderCollection(); renderTestimonials(); renderBoutiques();
+  renderConfigurator(); renderCart();
+  updateGiantWord(true);
+}
+function setLang(lang){
+  if (lang === state.lang) return;
+  state.lang = lang; store.set('lang', lang);
+  applyLang(); requestAnimationFrame(() => { measureAll(); if (hasST) ScrollTrigger.refresh(); setSpacer(); });
+}
+
+function renderCollection(){
+  const list = $('#col-list'); if (!list) return;
+  list.innerHTML = MODEL_ORDER.map(id => {
+    const m = MODELS[id];
+    return `
+    <article class="wcard ${id === state.model ? 'active' : ''}" data-model="${id}" tabindex="0"
+             role="button" aria-pressed="${id === state.model}" aria-label="${esc(tx(m.name))} — ${fmt(m.price)}">
+      <div class="wcard-top">
+        <span class="wcard-ref">${t('col.ref')} ${m.ref}</span>
+        <span class="wcard-dim">${m.size}</span>
+      </div>
+      <h3 class="wcard-name"><span class="dot" style="background:${m.dot};color:${m.dot}"></span>${esc(tx(m.name))}</h3>
+      <p class="wcard-desc">${esc(tx(m.desc))}</p>
+      <div class="wcard-specs">${m.chips.map(c => `<span class="chip-tag">${esc(tx(c))}</span>`).join('')}</div>
+      <div class="wcard-foot">
+        <div class="wcard-price"><small>${t('cfg.yourPrice')}</small><span class="p">${fmt(m.price)}</span></div>
+        <div class="wcard-actions">
+          <button class="mini-btn" data-view="${id}" aria-label="${esc(tx(m.name))}">${t('col.view')}</button>
+          <button class="mini-btn solid" data-add="${id}" aria-label="${esc(tx(m.name))} — ${t('col.add')}">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5 v14 M5 12 h14"/></svg>${t('col.add')}
+          </button>
+        </div>
+      </div>
+    </article>`;
+  }).join('');
+  $$('.wcard', list).forEach(card => {
+    const id = card.getAttribute('data-model');
+    card.addEventListener('click', () => selectModel(id));
+    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectModel(id); } });
+    card.addEventListener('mouseenter', () => { if (!isCoarse) previewModel(id); });
+    card.addEventListener('mouseleave', () => { if (!isCoarse) previewModel(state.model); });
+  });
+  $$('[data-view]', list).forEach(b => b.addEventListener('click', e => { e.stopPropagation(); selectModel(b.getAttribute('data-view')); }));
+  $$('[data-add]',  list).forEach(b => b.addEventListener('click', e => {
+    e.stopPropagation();
+    const id = b.getAttribute('data-add');
+    if (id !== state.model) selectModel(id, true);
+    addToCart(state.model, modelDefaults(id), 1);
+  }));
+}
+
+function renderTestimonials(){
+  const grid = $('#t-grid'); if (!grid) return;
+  grid.innerHTML = TESTIMONIALS.map(x => `
+    <figure class="t-card" data-reveal>
+      <span class="stars" aria-hidden="true">★★★★★</span>
+      <span class="sr-only">5 / 5</span>
+      <blockquote class="t-quote">${esc(tx(x.q))}</blockquote>
+      <figcaption class="t-who">
+        <span class="t-avatar">${esc(tx(x.who).trim()[0])}</span>
+        <span><b>${esc(tx(x.who))}</b><small>${esc(tx(x.city))} · ${t('t.watch')}: ${esc(x.watch)}</small></span>
+      </figcaption>
+    </figure>`).join('');
+  observeReveals(grid);
+}
+
+function renderBoutiques(){
+  const grid = $('#b-grid'); if (!grid) return;
+  grid.innerHTML = BOUTIQUES.map(b => `
+    <article class="b-card" data-reveal>
+      <h3 class="b-city">${esc(tx(b.city))} <small>${esc(tx(b.tag))}</small></h3>
+      <p class="b-line"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21 c 5 -5.5 7 -8.5 7 -11.5 a 7 7 0 1 0 -14 0 c 0 3 2 6 7 11.5 Z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>${esc(tx(b.addr))}</span></p>
+      <p class="b-line"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7 v5 l3.5 2"/></svg><span>${esc(tx(b.hours))}</span></p>
+      <p class="b-line"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5 h4 l1.5 4 -2 1.5 a 12 12 0 0 0 5 5 L15 13.5 l4 1.5 v4 a 2 2 0 0 1 -2 2 C 10 21 3 14 3 7 a 2 2 0 0 1 2 -2 Z"/></svg><span dir="ltr">${esc(b.phone)}</span></p>
+      <a class="link-arrow b-link" href="https://maps.google.com/?q=${encodeURIComponent(b.map)}" target="_blank" rel="noopener">
+        ${t('b.dir')}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 h15 M13 6 l6 6 -6 6"/></svg>
+      </a>
+    </article>`).join('');
+  observeReveals(grid);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   7. CONFIGURATOR
+   ───────────────────────────────────────────────────────────── */
+function renderConfigurator(){
+  const m = MODELS[state.model];
+  /* dial swatches */
+  const dWrap = $('#cfg-dial');
+  if (dWrap){
+    dWrap.innerHTML = Object.keys(DIALS).map(k => `
+      <button class="sw" role="button" aria-pressed="${state.cfg.dial === k}" data-opt="dial" data-val="${k}"
+              aria-label="${esc(tx(DIALS[k].name))}" title="${esc(tx(DIALS[k].name))}"><span style="--sw:${DIALS[k].hex}"></span></button>`).join('');
+  }
+  const pillRow = (sel, dict, opt) => {
+    const w = $(sel); if (!w) return;
+    w.innerHTML = Object.keys(dict).map(k => `
+      <button class="pill" aria-pressed="${state.cfg[opt] === k}" data-opt="${opt}" data-val="${k}">
+        ${esc(tx(dict[k].name))}${dict[k].price > 0 ? `<span style="opacity:.55"> +${fmt(dict[k].price)}</span>` : ''}
+      </button>`).join('');
+  };
+  pillRow('#cfg-bezel', BEZELS, 'bezel');
+  pillRow('#cfg-bracelet', BRACELETS, 'bracelet');
+  pillRow('#cfg-style', STYLES, 'style');
+  $$('[data-opt]').forEach(b => b.addEventListener('click', () => {
+    const opt = b.getAttribute('data-opt'), val = b.getAttribute('data-val');
+    if (state.cfg[opt] === val) return;
+    state.cfg[opt] = val;
+    applyConfigOption(opt, val);
+  }));
+  renderConfigSummary();
+}
+function renderConfigSummary(){
+  const m = MODELS[state.model];
+  $('#cfg-model-name').textContent = tx(m.name);
+  $('#cfg-model-ref').textContent = 'Ref. ' + m.ref;
+  $('#cfg-dial-name').textContent = tx(DIALS[state.cfg.dial].name);
+  $('#cfg-bezel-name').textContent = tx(BEZELS[state.cfg.bezel].name);
+  $('#cfg-bracelet-name').textContent = tx(BRACELETS[state.cfg.bracelet].name);
+  $('#cfg-style-name').textContent = tx(STYLES[state.cfg.style].name);
+  const rows = [
+    ['cfg.lineBase', m.price],
+    ['cfg.lineDial', DIALS[state.cfg.dial].price - DIALS[m.dial].price],
+    ['cfg.lineBezel', BEZELS[state.cfg.bezel].price - BEZELS[m.bezelMat].price],
+    ['cfg.lineBracelet', BRACELETS[state.cfg.bracelet].price - BRACELETS[m.bracelet].price],
+    ['cfg.lineStyle', STYLES[state.cfg.style].price - STYLES[m.style].price]
+  ];
+  $('#cfg-lines').innerHTML = rows.map(([k, delta], idx) => `
+    <div class="cfg-line"><span>${t(k)}</span><b>${idx === 0 ? fmt(delta) : (delta > 0 ? '+ ' + fmt(delta) : delta < 0 ? '− ' + fmt(-delta) : '—')}</b></div>`).join('');
+  $('#cfg-price').textContent = fmt(priceOf(state.model, state.cfg));
+}
+$('#cfg-add').addEventListener('click', () => addToCart(state.model, { ...state.cfg }, 1));
+$('#cfg-reset').addEventListener('click', () => {
+  state.cfg = modelDefaults(state.model);
+  renderConfigurator(); rebuildWatchSoft(); toast('toast.reset');
+});
+
+/* ─────────────────────────────────────────────────────────────
+   8. CART & CHECKOUT
+   ───────────────────────────────────────────────────────────── */
+function saveCart(){ store.set('cart', state.cart); }
+function cartCount(){ return state.cart.reduce((n, it) => n + it.qty, 0); }
+function cartTotalUSD(){ return state.cart.reduce((n, it) => n + priceOf(it.model, it.cfg) * it.qty, 0); }
+function addToCart(model, cfg, qty){
+  const id = [model, cfg.dial, cfg.bezel, cfg.bracelet, cfg.style].join('|');
+  const found = state.cart.find(it => it.id === id);
+  if (found) found.qty += qty; else state.cart.push({ id, model, cfg: { ...cfg }, qty });
+  saveCart(); renderCart(); toast('toast.added');
+}
+function renderCart(){
+  const count = $('#cart-count');
+  if (count){ count.textContent = cartCount(); count.setAttribute('data-zero', cartCount() ? '0' : '1'); }
+  const items = $('#cart-items'), empty = $('#cart-empty'), foot = $('#cart-foot');
+  if (!items) return;
+  if (state.cartView === 'cart' && !state.cart.length){
+    items.hidden = true; empty.hidden = false; foot.hidden = true; return;
+  }
+  empty.hidden = true; items.hidden = false; foot.hidden = state.cartView !== 'cart';
+  items.innerHTML = state.cart.map((it, i) => {
+    const m = MODELS[it.model];
+    return `
+    <div class="cd-item">
+      <span class="cd-thumb" style="background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.14), transparent 55%), ${DIALS[it.cfg.dial].hex}">${esc(tx(m.name)).trim()[0]}</span>
+      <div class="cd-info">
+        <b>${esc(tx(m.name))}</b>
+        <small>${esc(cfgSummary(it.model, it.cfg))}</small>
+        <div class="cd-qty">
+          <button class="qbtn" data-q="-1" data-i="${i}" aria-label="${t('cart.qtyMinus')}"><svg viewBox="0 0 24 24"><path d="M5 12 h14"/></svg></button>
+          <output aria-label="Qty">${it.qty}</output>
+          <button class="qbtn" data-q="1" data-i="${i}" aria-label="${t('cart.qtyPlus')}"><svg viewBox="0 0 24 24"><path d="M12 5 v14 M5 12 h14"/></svg></button>
+        </div>
+      </div>
+      <div class="cd-side">
+        <span class="cd-price">${fmt(priceOf(it.model, it.cfg) * it.qty)}</span>
+        <button class="cd-rm" data-rm="${i}">${t('cart.remove')}</button>
+      </div>
+    </div>`;
+  }).join('');
+  $('#cart-total').textContent = fmt(cartTotalUSD());
+  $$('[data-q]', items).forEach(b => b.addEventListener('click', () => {
+    const i = +b.getAttribute('data-i');
+    state.cart[i].qty += +b.getAttribute('data-q');
+    if (state.cart[i].qty <= 0){ state.cart.splice(i, 1); toast('toast.removed'); }
+    saveCart(); renderCart();
+  }));
+  $$('[data-rm]', items).forEach(b => b.addEventListener('click', () => {
+    state.cart.splice(+b.getAttribute('data-rm'), 1);
+    saveCart(); renderCart(); toast('toast.removed');
+  }));
+}
+function setCartView(view){
+  state.cartView = view;
+  $('#cart-view').hidden = view !== 'cart';
+  $('#checkout-view').hidden = view !== 'checkout';
+  $('#ok-view').hidden = view !== 'ok';
+  renderCart();
+}
+function openCart(){
+  state.cartOpen = true;
+  setCartView('cart');
+  $('#cart-drawer').classList.add('open');
+  $('#cart-drawer').setAttribute('aria-hidden', 'false');
+  $('#cart-overlay').classList.add('open');
+  $('#cart-overlay').setAttribute('aria-hidden', 'false');
+  $('#cart-close').focus();
+}
+function closeCart(){
+  state.cartOpen = false;
+  $('#cart-drawer').classList.remove('open');
+  $('#cart-drawer').setAttribute('aria-hidden', 'true');
+  $('#cart-overlay').classList.remove('open');
+  $('#cart-overlay').setAttribute('aria-hidden', 'true');
+  $('#cart-btn').focus();
+}
+$('#cart-btn').addEventListener('click', openCart);
+$('#cart-close').addEventListener('click', closeCart);
+$('#cart-overlay').addEventListener('click', closeCart);
+$('#cart-browse').addEventListener('click', () => { closeCart(); scrollToSel('#collection'); });
+$('#cart-checkout').addEventListener('click', () => setCartView('checkout'));
+$('#co-back').addEventListener('click', () => setCartView('cart'));
+$('#ok-continue').addEventListener('click', () => { closeCart(); setTimeout(() => setCartView('cart'), 650); });
+$('#checkout-view').addEventListener('submit', e => {
+  e.preventDefault();
+  let ok = true;
+  const check = (sel, test) => {
+    const input = $(sel), field = input.closest('.field'), err = $('.fe', field);
+    const good = test(input.value.trim());
+    input.classList.toggle('err', !good); err.classList.toggle('show', !good);
+    if (!good) ok = false;
+  };
+  check('#co-name', v => v.length > 1);
+  check('#co-email', v => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v));
+  check('#co-phone', v => v.replace(/[^\d]/g, '').length >= 7);
+  check('#co-city', v => v.length > 1);
+  check('#co-address', v => v.length > 3);
+  if (!ok) return;
+  $('#ok-num').textContent = 'CC-' + Date.now().toString(36).toUpperCase().slice(-6);
+  state.cart = []; saveCart(); renderCart();
+  setCartView('ok');
+});
+/* Newsletter */
+$('#nl-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const input = $('#nl-email'), err = $('#nl-error'), ok = $('#nl-ok');
+  const good = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(input.value.trim());
+  err.classList.toggle('show', !good);
+  if (!good) return;
+  ok.classList.add('show'); input.value = ''; input.blur();
+  toast('toast.subscribed');
+});
+
+/* ─────────────────────────────────────────────────────────────
+   9. LANGUAGE & CURRENCY SWITCHES
+   ───────────────────────────────────────────────────────────── */
+$('#lang-btn').addEventListener('click', () => setLang(state.lang === 'en' ? 'ar' : 'en'));
+$('#lang-btn-menu').addEventListener('click', () => setLang(state.lang === 'en' ? 'ar' : 'en'));
+$$('.currency').forEach(sel => sel.addEventListener('change', () => {
+  state.currency = sel.value; store.set('currency', state.currency);
+  $$('.currency').forEach(s => { s.value = state.currency; });
+  renderCollection(); renderConfigSummary(); renderCart();
+}));

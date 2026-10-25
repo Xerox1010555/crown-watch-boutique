@@ -1,0 +1,140 @@
+<body>
+<a class="skip-link" href="#collection" data-i18n="a11y.skip">Skip to content</a>
+<noscript><p style="padding:120px 24px;text-align:center;font-family:serif">Crown &amp; Co. — Rolex Authorized Boutique. Please enable JavaScript for the full 3D experience.</p></noscript>
+
+<!-- ═══ Preloader ═══ -->
+<div id="loader" role="progressbar" aria-label="Loading" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+  <div class="ld-mark">
+    <div class="ld-ring" aria-hidden="true"></div>
+    <svg class="ld-crown" viewBox="0 0 40 34" aria-hidden="true"><path d="M4 24 L7 10 L14.5 18 L20 5 L25.5 18 L33 10 L36 24 Z M6 27 h28 M8 31 h24"/></svg>
+  </div>
+  <div class="ld-num"><span id="ld-pct">0</span><small>%</small></div>
+  <p class="ld-tag" data-i18n="pre.tag">CROWN &amp; CO. · AUTHORIZED BOUTIQUE</p>
+</div>
+
+<!-- ═══ Custom cursor ═══ -->
+<div id="cur-dot" aria-hidden="true"></div>
+<div id="cur-ring" aria-hidden="true"></div>
+
+<!-- ═══ Giant backdrop word (behind WebGL canvas) ═══ -->
+<div id="giant" aria-hidden="true"><span id="giant-word">PERPETUAL</span></div>
+
+<!-- ═══ Fixed WebGL stage ═══ -->
+<canvas id="gl" aria-hidden="true"></canvas>
+<div id="gl-wrap-fallback" aria-hidden="true">
+  <div>
+    <div class="fallback-watch"></div>
+    <p class="fallback-note" data-i18n="gl.fallback">3D display is unavailable on this device — exploring the boutique in classic view.</p>
+  </div>
+</div>
+
+<!-- ═══ Navigation ═══ -->
+<header id="nav">
+  <div class="nav-inner">
+    <a class="logo" href="#hero" data-anchor="#hero" aria-label="Crown and Co — home">
+      <svg class="logo-crown" viewBox="0 0 40 34" aria-hidden="true"><path fill="#c9a961" d="M4 24 L7 10 L14.5 18 L20 5 L25.5 18 L33 10 L36 24 Z M6 26 h28 v3.5 H6 z"/></svg>
+      <span class="logo-text">
+        <span class="logo-name">Crown &amp; Co.</span>
+        <span class="logo-sub" data-i18n="nav.boutique">Rolex Authorized Boutique</span>
+      </span>
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#collection" data-anchor="#collection" data-nav="collection" data-i18n="nav.collection">Collection</a>
+      <a href="#configurator" data-anchor="#configurator" data-nav="configurator" data-i18n="nav.configurator">Configurator</a>
+      <a href="#craft" data-anchor="#craft" data-nav="craft" data-i18n="nav.craft">Craft</a>
+      <a href="#boutiques" data-anchor="#boutiques" data-nav="boutiques" data-i18n="nav.boutiques">Boutiques</a>
+    </nav>
+    <div class="nav-tools">
+      <select class="currency" id="currency-nav" aria-label="Currency">
+        <option value="USD">USD $</option>
+        <option value="EGP">EGP</option>
+        <option value="AED">AED</option>
+        <option value="SAR">SAR</option>
+      </select>
+      <button class="tool-btn lang-btn" id="lang-btn" aria-label="Switch language">ع</button>
+      <button class="tool-btn" id="cart-btn" aria-label="Open cart" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8 h12 l-1 12 H7 L6 8 Z"/><path d="M9 8 V6 a3 3 0 0 1 6 0 v2"/></svg>
+        <span class="cart-count" id="cart-count" data-zero="1">0</span>
+      </button>
+      <button class="burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══ Mobile menu ═══ -->
+<div id="menu" role="dialog" aria-modal="true" aria-label="Menu">
+  <nav class="menu-links" aria-label="Mobile">
+    <a href="#collection" data-anchor="#collection" data-menu-close><span data-i18n="nav.collection">Collection</span><small>01</small></a>
+    <a href="#configurator" data-anchor="#configurator" data-menu-close><span data-i18n="nav.configurator">Configurator</span><small>02</small></a>
+    <a href="#craft" data-anchor="#craft" data-menu-close><span data-i18n="nav.craft">Craft</span><small>03</small></a>
+    <a href="#boutiques" data-anchor="#boutiques" data-menu-close><span data-i18n="nav.boutiques">Boutiques</span><small>04</small></a>
+  </nav>
+  <div class="menu-foot">
+    <select class="currency" id="currency-menu" aria-label="Currency">
+      <option value="USD">USD $</option>
+      <option value="EGP">EGP</option>
+      <option value="AED">AED</option>
+      <option value="SAR">SAR</option>
+    </select>
+    <button class="tool-btn lang-btn" id="lang-btn-menu">ع</button>
+  </div>
+</div>
+
+<div id="page">
+<main id="main">
+
+  <!-- ═══════════ HERO ═══════════ -->
+  <section id="hero" aria-label="Introduction">
+    <div class="hero-halo" aria-hidden="true"></div>
+    <div class="hero-inner">
+      <p class="eyebrow" data-reveal><span data-i18n="hero.eyebrow">Crown &amp; Co. · Rolex Authorized Boutique</span></p>
+      <h1 class="hero-title">
+        <span class="row"><span class="row-inner" data-split data-i18n="hero.titleA">Time,</span></span>
+        <span class="row"><span class="row-inner accent" data-split data-i18n="hero.titleB">Perfected.</span></span>
+      </h1>
+      <p class="hero-sub" data-reveal style="--d:.15s" data-i18n="hero.sub">An atelier of Oystersteel, 18 ct gold and in-house calibres. Explore the world's most coveted timepieces — rendered live, in three dimensions.</p>
+      <div class="hero-cta" data-reveal style="--d:.3s">
+        <a class="btn btn-gold magnetic" href="#collection" data-anchor="#collection"><span class="btn-inner" data-i18n="hero.cta1">Explore the Collection</span></a>
+        <a class="btn magnetic" href="#boutiques" data-anchor="#boutiques"><span class="btn-inner" data-i18n="hero.cta2">Book an Appointment</span></a>
+      </div>
+      <p class="hero-meta" data-reveal style="--d:.45s">
+        <span data-i18n="hero.metaCities">Geneva · Dubai · Riyadh · Cairo</span><i aria-hidden="true"></i><span data-i18n="hero.metaEst">Since 1948</span>
+      </p>
+    </div>
+    <p class="scroll-hint" aria-hidden="true" data-i18n="hero.scroll">Scroll to discover</p>
+    <div class="hero-stage" id="stage-hero" data-tilt-stage style="position:absolute;inset:0;z-index:3" aria-hidden="true"></div>
+  </section>
+
+  <!-- ═══════════ SCROLL STORYTELLING ═══════════ -->
+  <section id="story" aria-label="The craft, told in three chapters">
+
+    <div class="chapter" id="ch1">
+      <div class="ch-inner">
+        <p class="ch-num">01 · <span data-i18n="story1.kicker">The Bezel</span></p>
+        <h3 class="ch-title" data-split data-i18n="story1.title">A Signature Cut in Light</h3>
+        <p class="ch-body" data-i18n="story1.body">Sixty-four facets machined into precious metal at a precise 45° angle. The fluted bezel catches light like a prism — and crowns every dial in the collection.</p>
+        <span class="ch-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 L20 20 H4 Z"/></svg><span data-i18n="story1.chip">18 ct gold · 64 facets</span></span>
+      </div>
+    </div>
+
+    <div class="chapter" id="ch2">
+      <div class="ch-inner">
+        <p class="ch-num">02 · <span data-i18n="story2.kicker">The Calibre</span></p>
+        <h3 class="ch-title" data-split data-i18n="story2.title">The Heart That Never Rests</h3>
+        <p class="ch-body" data-i18n="story2.body">Beneath the dial, the manufacture calibre beats at 28,800 vibrations per hour — Chronergy escapement, seventy hours of reserve, certified to −2/+2 seconds a day.</p>
+        <span class="ch-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7 v5 l3.5 2"/></svg><span data-i18n="story2.chip">−2/+2 sec · Superlative Chronometer</span></span>
+      </div>
+    </div>
+
+    <div class="chapter" id="ch3">
+      <div class="ch-inner">
+        <p class="ch-num">03 · <span data-i18n="story3.kicker">The Oyster Case</span></p>
+        <h3 class="ch-title" data-split data-i18n="story3.title">Engineered for the Deep</h3>
+        <p class="ch-body" data-i18n="story3.body">A monobloc middle case, Triplock crown and hermetically screwed caseback — sealed like a vault around the movement, waterproof to three hundred metres.</p>
+        <span class="ch-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 c 3 4 -3 6 0 9 c 2 2 5 3 5 6 a 7 7 0 1 0 -10 0 c 0 -3 3 -4 5 -6"/></svg><span data-i18n="story3.chip">Waterproof 300 m</span></span>
+      </div>
+    </div>
+
+  </section>
